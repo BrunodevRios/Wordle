@@ -8,6 +8,7 @@
 #define INTENTOS 6
 #define LETRAS 6
 #define ARCHIVOEXTERNO "palabras.txt"
+#define MAX_INTENTOS 6
 
 
 int totalLines(){
@@ -54,13 +55,40 @@ void getWordInLine(char *p,int pos) {
     fclose(fp);
 }
 
+void intento(char *p){
+    char palabra[6];
+    
+    printf("%s\n", p);
+    scanf("%s",&palabra);
+
+    strcat(palabra,"\n");
+
+    int value = strcmp(palabra,p);
+
+    if (value == 0)
+    {
+        printf("Son iguales \n");
+    }
+    
+}
+
 void partidas(int partidas,char * p) {
     int pos;
-    for(int i = 0; i < partidas;i++){
+    for(int i = 1; i <= partidas;i++){
         srand(clock());
         pos = rand()%totalLines()+1;
-        printf("%i \n",pos);
         getWordInLine(p,pos);
+
+        printf("Partida %i / %i \n", i,partidas);
+        
+        for (int j = 1; j <= MAX_INTENTOS; j++)
+        {
+            printf("     Intento %i / %i \n", j,MAX_INTENTOS);
+
+            fflush(stdin);
+            intento(p);
+        }
+        
     }
     
 }
