@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h> //Para poder usar toupper.
+#include <windows.h>
 
 #define MAX_PARTIDAS 8
 #define MIN_PARTIDAS 1
@@ -20,6 +21,47 @@
 #define KGRN  "\x1B[32m"
 #define KYEL  "\x1B[33m"
 #define RESET "\x1B[0m"
+
+//manera en la que el programa cuando se ejecuta .exe pueda mostrar los colores en cmd
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
+#endif
+static HANDLE stdoutHandle;
+static DWORD outModeInit;
+
+//funcion necesarias para mostrar colores en cmd
+void setupConsole(void) {
+    DWORD outMode = 0;
+    stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if(stdoutHandle == INVALID_HANDLE_VALUE) {
+        exit(GetLastError());
+    }
+    
+    if(!GetConsoleMode(stdoutHandle, &outMode)) {
+        exit(GetLastError());
+    }
+
+    outModeInit = outMode;
+    
+    // Enable ANSI escape codes
+    outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+    if(!SetConsoleMode(stdoutHandle, outMode)) {
+        exit(GetLastError());
+    }   
+}
+
+//funcion necesarias para mostrar colores en cmd
+void restoreConsole(void) {
+    // Reset colors
+    printf("\x1b[0m");  
+    
+    // Reset console mode
+    if(!SetConsoleMode(stdoutHandle, outModeInit)) {
+        exit(GetLastError());
+    }
+}
 
 int totalLines(){
     FILE * file;
@@ -146,8 +188,8 @@ void partidas(int partidas,char * p) {
                 j = MAX_INTENTOS;
             }
         }
-        if(partidas > 1){
-            printf("La palabra era: %s \n",p);
+        if(partidas >= 1){
+            printf("La palabra era: %s%s%s \n",KGRN, p, RESET);
 
             if(i != partidas)
                 printf("Siguiente ronda! \n");
@@ -156,6 +198,7 @@ void partidas(int partidas,char * p) {
 }
 
 int main() {
+    setupConsole();
     int i;
     int totaljuegos;
     int sesiones;
@@ -175,5 +218,12 @@ int main() {
     } 
     
     partidas(sesiones,p);
+
+    printf("Fin de la partida\n Gracias por jugar!!\n");
+
+    restoreConsole();
+    
+    system("pause");
+
     return 0;
 } 
