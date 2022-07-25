@@ -189,8 +189,8 @@ void partidas(int partidas,char * p) {
             }
         }
         if(partidas >= 1){
-            printf("La palabra era: %s%s%s \n",KGRN, p, RESET);
-
+            printf("La palabra era: %s%s \n",KGRN, p);
+            printf(RESET);
             if(i != partidas)
                 printf("Siguiente ronda! \n");
         }
