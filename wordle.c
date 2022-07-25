@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h> //Para poder usar toupper.
 
 #define MAX_PARTIDAS 8
 #define MIN_PARTIDAS 1
@@ -10,6 +11,15 @@
 #define ARCHIVOEXTERNO "palabras.txt"
 #define MAX_INTENTOS 6
 
+#define START 5000
+#define MAXPOINTS 10000
+#define PASSLINE 500 
+#define CLETTER 100 //Correct letter
+#define GLETTER 50 //Good letter
+
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define RESET "\x1B[0m"
 
 int totalLines(){
     FILE * file;
@@ -20,7 +30,6 @@ int totalLines(){
 
     while(!feof(file))
     {
-        
         ch = fgetc(file);
         if(ch == '\n')
         {
@@ -55,11 +64,24 @@ void getWordInLine(char *p,int pos) {
     fclose(fp);
 }
 
-void intento(char *p){
-    char palabra[6];
-    
-    printf("%s\n", p);
-    scanf("%s",&palabra);
+int intento(char *p){
+    char palabra[6], pal_ingresada[6];
+    int i = 0,j = 0, u = 0;
+
+    scanf("%[^\n]s",&palabra);
+
+    int largo = strlen(palabra);
+
+    while(largo != 5){
+        printf("Por favor ingrese una palabra con un largo de 5 letras.\n");
+        scanf("%s",&pal_ingresada);
+        largo = strlen(pal_ingresada);
+    }
+
+    for (int k = 0; k < largo; k++)
+    {
+        palabra[k] = toupper(palabra[k]);
+    }
 
     strcat(palabra,"\n");
 
@@ -67,13 +89,44 @@ void intento(char *p){
 
     if (value == 0)
     {
-        printf("Son iguales \n");
+        printf("%s%s\n" RESET, KGRN,p);
+        printf("Has acertado la palabra secreta \n");
+        printf("\n");
+        return 1;
     }
-    
+    else{
+        while (i < largo && palabra[i] != 10)
+        {
+            if (p[i] == palabra[i] && p[i] != 10)
+            {   
+                printf(RESET);
+                printf("%s%c",KGRN,p[i]);
+                printf(RESET);
+            }
+            else if(palabra[i] != 10){
+
+                int val = palabra[i];
+
+                if(strchr(p,val) != NULL){
+
+                    printf(RESET);
+                    printf("%s%c",KYEL,palabra[i]);
+                    printf(RESET);
+                    val = 0;
+                }
+                else{
+                    printf(RESET);
+                    printf("_");
+                }
+            }
+            i++;
+        }
+        printf("\n"RESET);  
+    }
 }
 
 void partidas(int partidas,char * p) {
-    int pos;
+    int pos, resultado;
     for(int i = 1; i <= partidas;i++){
         srand(clock());
         pos = rand()%totalLines()+1;
@@ -86,13 +139,21 @@ void partidas(int partidas,char * p) {
             printf("     Intento %i / %i \n", j,MAX_INTENTOS);
 
             fflush(stdin);
-            intento(p);
+            resultado = intento(p);
+           
+            if (resultado == 1)
+            {
+                j = MAX_INTENTOS;
+            }
         }
-        
-    }
-    
-}
+        if(partidas > 1){
+            printf("La palabra era: %s \n",p);
 
+            if(i != partidas)
+                printf("Siguiente ronda! \n");
+        }
+    }
+}
 
 int main() {
     int i;
@@ -100,9 +161,10 @@ int main() {
     int sesiones;
     int palabramisteriosa[LETRAS];
     char p[6];
-    
+
     printf("Hola, bienvenido a Wordle\n");
-    printf("Porfavor ingresa la cantidad de sesiones que deseas jugar entre 1 y 8: \n");
+    printf("Porfavor ingresa la cantidad de sesiones que deseas jugar entre 1 y 8. \n");
+    printf("Recuerda evitar ingresar palabras donde se repitan letras, este Wordle trabaja con palabras totalmente heterogramas. \n");
     printf(">");
     
     scanf("%i", &sesiones);
