@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h> //Para poder usar toupper.
-#include <windows.h>
+#include <windows.h> // para poder ejecutar colores en cmd
 
 #define MAX_PARTIDAS 8
 #define MIN_PARTIDAS 1
@@ -26,6 +26,7 @@
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 #endif
+
 static HANDLE stdoutHandle;
 static DWORD outModeInit;
 
