@@ -3,7 +3,8 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h> //Para poder usar toupper.
-#include <windows.h> // para poder ejecutar colores en cmd
+#include <windows.h> // para poder ejecutar colores en CMD
+#include <conio.h>
 
 #define MAX_PARTIDAS 8
 #define MIN_PARTIDAS 1
@@ -12,11 +13,13 @@
 #define ARCHIVOEXTERNO "palabras.txt"
 #define MAX_INTENTOS 6
 
+//Puntuaciones
 #define START 5000
-#define MAXPOINTS 10000
+#define MAXPOINTS 5000
 #define PASSLINE 500 
 #define CLETTER 100 //Correct letter
 #define GLETTER 50 //Good letter
+#define PAL_ADIVINADA 2000
 
 #define KGRN  "\x1B[32m"
 #define KYEL  "\x1B[33m"
@@ -26,9 +29,10 @@
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 #endif
-
 static HANDLE stdoutHandle;
 static DWORD outModeInit;
+
+int sesiones, acierto = 0, ck[5];
 
 //funcion necesarias para mostrar colores en cmd
 void setupConsole(void) {
@@ -62,6 +66,42 @@ void restoreConsole(void) {
     if(!SetConsoleMode(stdoutHandle, outModeInit)) {
         exit(GetLastError());
     }
+}
+
+void promedio(int *psesiones, int sesiones){
+    
+    int suma;
+    float prom;
+
+    for (int i = 1; i <= sesiones; i++)
+    {
+        suma = suma + psesiones[i];
+    }
+
+    prom = suma / sesiones;
+
+    printf("El promedio de tu puntaje fue de: %.2f ptos.\n",prom);
+}
+
+void maxAmin(int *psesiones, int sesiones){
+    int min, max;
+
+    min = max = psesiones[1];
+
+    for (int i = 1; i <= sesiones; i++)
+    {
+        if (min > psesiones[i])
+        {
+            min = psesiones[i];
+            if (max < psesiones[i])
+            {
+                max = psesiones[i];
+            }
+        }
+    }
+    
+    printf("El maximo puntaje que obtuviste fue de: %i ptos.\n", max);
+    printf("El minimo puntaje que obtuviste fue de: %i ptos.\n", min);
 }
 
 int totalLines(){
@@ -107,7 +147,33 @@ void getWordInLine(char *p,int pos) {
     fclose(fp);
 }
 
-int intento(char *p){
+int puntaje(int psesion,int points,int partidaActual){
+
+    int puntajeSesiones;
+
+    if(points == MAXPOINTS){
+        puntajeSesiones = START + MAXPOINTS + PAL_ADIVINADA;
+        return puntajeSesiones;
+    }
+    else if(points == PASSLINE){
+        puntajeSesiones = psesion - PASSLINE;
+        return puntajeSesiones;
+    }
+    else if (points == CLETTER){
+        puntajeSesiones = psesion + CLETTER;
+        return puntajeSesiones;
+    }
+    else if (points == GLETTER){
+        puntajeSesiones = psesion + GLETTER;
+        return puntajeSesiones;
+    }
+    else if (points == PAL_ADIVINADA){
+        puntajeSesiones = psesion + PAL_ADIVINADA;
+        return puntajeSesiones;
+    }
+}
+
+int intento(int psesion,char *p,int attemp){
     char palabra[6], pal_ingresada[6];
     int i = 0,j = 0, u = 0;
 
@@ -135,13 +201,27 @@ int intento(char *p){
         printf("%s%s\n" RESET, KGRN,p);
         printf("Has acertado la palabra secreta \n");
         printf("\n");
-        return 1;
+
+        if(attemp == 1){
+            return 1;
+        }
+        acierto = 1;
+        psesion = puntaje(psesion,PAL_ADIVINADA,attemp);
+        return psesion;
     }
     else{
+        psesion = puntaje(psesion,PASSLINE,attemp);
+
         while (i < largo && palabra[i] != 10)
         {
             if (p[i] == palabra[i] && p[i] != 10)
             {   
+                if (ck[i] == 0)
+                {
+                    psesion = puntaje(psesion,CLETTER,attemp);
+                }
+                ck[i] = 1;
+        
                 printf(RESET);
                 printf("%s%c",KGRN,p[i]);
                 printf(RESET);
@@ -151,7 +231,7 @@ int intento(char *p){
                 int val = palabra[i];
 
                 if(strchr(p,val) != NULL){
-
+                    psesion = puntaje(psesion,GLETTER,attemp);
                     printf(RESET);
                     printf("%s%c",KYEL,palabra[i]);
                     printf(RESET);
@@ -164,12 +244,25 @@ int intento(char *p){
             }
             i++;
         }
-        printf("\n"RESET);  
+        printf("\n"RESET);
+        return psesion;
     }
 }
 
 void partidas(int partidas,char * p) {
+
     int pos, resultado;
+    int psesiones[sesiones];
+
+    for (int n = 1; n <= sesiones; n++)
+    {
+        psesiones[n] = START;
+    }
+    for (int f = 0; f < 5; f++)
+    {
+        ck[f] = 0;
+    }
+    
     for(int i = 1; i <= partidas;i++){
         srand(clock());
         pos = rand()%totalLines()+1;
@@ -177,32 +270,65 @@ void partidas(int partidas,char * p) {
 
         printf("Partida %i / %i \n", i,partidas);
         
-        for (int j = 1; j <= MAX_INTENTOS; j++)
+        for (int attemp = 1; attemp <= MAX_INTENTOS; attemp++)
         {
-            printf("     Intento %i / %i \n", j,MAX_INTENTOS);
+            printf("Intento %i / %i \n", attemp,MAX_INTENTOS);
 
             fflush(stdin);
-            resultado = intento(p);
+            resultado = intento(psesiones[i],p,attemp);
            
             if (resultado == 1)
             {
-                j = MAX_INTENTOS;
+                attemp = MAX_INTENTOS;
+                psesiones[i] = puntaje(psesiones[i],MAXPOINTS,i);
+            }
+            else if (acierto == 1){
+                attemp = MAX_INTENTOS;
+                psesiones[i] = resultado;
+            }
+            else if (acierto == 0 && attemp == MAX_INTENTOS)
+            {
+                psesiones[i] = 0;
+            }
+            else{
+                psesiones[i] = resultado;
             }
         }
         if(partidas >= 1){
             printf("La palabra era: %s%s \n",KGRN, p);
             printf(RESET);
-            if(i != partidas)
+            if(i != partidas){
+                char decision;
+                printf("Desea seguir jugando? [N - exit]: ");
+                getchar();
+                scanf("%c",&decision);
+                
+                if(decision == 'N' || decision == 'n'){
+                    for (int m = 1; m <= sesiones; m++)
+                    {
+                        printf("P. %i = %i pts. \n",m,psesiones[m]);
+                        sesiones = i;
+                    }
+                    return;
+                }
                 printf("Siguiente ronda! \n");
+            }
         }
+        acierto = 0;
     }
+    for (int m = 1; m <= sesiones; m++)
+    {
+        printf("P. %i = %i pts. \n",m,psesiones[m]);
+    } printf("\n");
+    maxAmin(psesiones,sesiones);
+    promedio(psesiones,sesiones);
+    printf("\n");
 }
 
 int main() {
     setupConsole();
     int i;
     int totaljuegos;
-    int sesiones;
     int palabramisteriosa[LETRAS];
     char p[6];
 
