@@ -1,11 +1,13 @@
+// LIBRERIAS INLCUIDAS
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <ctype.h> //Para poder usar toupper.
+#include <string.h> // para funciones como strcpy()
+#include <time.h> // para funciones del tiempo
+#include <ctype.h> //Para poder usar la funcion toupper.
 #include <windows.h> // para poder ejecutar colores en CMD
-#include <conio.h>
+#include <conio.h> // para funciones como getch()
 
+// MACROS UTILIZADOS PARA EL FUNCIONAMIENTO DE UNA PARTIDA
 #define MAX_PARTIDAS 8
 #define MIN_PARTIDAS 1
 #define INTENTOS 6
@@ -13,28 +15,32 @@
 #define ARCHIVOEXTERNO "palabras.txt"
 #define MAX_INTENTOS 6
 
-//Puntuaciones
-#define START 5000
-#define MAXPOINTS 5000
-#define PASSLINE 500 
-#define CLETTER 100 //Correct letter
-#define GLETTER 50 //Good letter
+// MARCOS UTILIZADOS PARA LAS PUNTUACIONES
+#define INICIO 5000
+#define MAXPUNTOS 5000
+#define PASODELINEA 500 
+#define LCORRECTA 100 //letra correcta
+#define ELETRA 50 //Existencia de letra
 #define PAL_ADIVINADA 2000
 
+// MACROS QUE BUSQUE EN INTERNET PARA PODER IMPRIMIR COLORES AMARILLOS Y VERDES SIENDO FIEL AL WORDLE ORIGINAL
 #define KGRN  "\x1B[32m"
 #define KYEL  "\x1B[33m"
-#define RESET "\x1B[0m"
+#define RESET "\x1B[0m" // vuelve a la fuente del color predeterminado por la consola
 
-//manera en la que el programa cuando se ejecuta .exe pueda mostrar los colores en cmd
+// MACROS QUE TAMBIEN TUVE QUE BUSCAR YA QUE AL MOMENTO DE CORRERLO EN CMD, NO ME MOSTRABA COLORES AL IGUAL QUE EN LA CONSOLA
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 #endif
 static HANDLE stdoutHandle;
 static DWORD outModeInit;
 
+// MACROS UNIVERSALES QUE NECESITE PARA QUE MAS DE UNA FUNCION PUEDA TRABAJAR EN CONJUNTO CON ELLOS
 int sesiones, acierto = 0, ck[5];
 
-//funcion necesarias para mostrar colores en cmd
+//FUNCIONES DE LAS CUALES SE VAN A COMPONER NUESTRO WORDLE:
+
+// FUNCION QUE BUSQUE EN INTERNET PARA PODER MOSTRAR COLORES EN CMD
 void setupConsole(void) {
     DWORD outMode = 0;
     stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -57,33 +63,35 @@ void setupConsole(void) {
     }   
 }
 
-//funcion necesarias para mostrar colores en cmd
+// FUNCION QUE BUSQUE EN INTERNET PARA PODER MOSTRAR COLORES EN CMD
 void restoreConsole(void) {
-    // Reset colors
+    // Reset de colores
     printf("\x1b[0m");  
     
-    // Reset console mode
+    // Reset modo de consolas
     if(!SetConsoleMode(stdoutHandle, outModeInit)) {
         exit(GetLastError());
     }
 }
 
+// FUNCION QUE MEDIANTE UNA CUENTA MATEMATICA Y UN FOR CALCULA EL PROMEDIO DE LAS DIFERENTES PARTIDAS QUE JUGUEMOS
 void promedio(int *psesiones, int sesiones){
     
     int suma;
     float prom;
 
-    for (int i = 1; i <= sesiones; i++)
+    for (int i = 1; i <= sesiones; i++) // el for es para que itere en cada sesion de juego y guarde los diferentes puntajes
     {
         suma = suma + psesiones[i];
     }
 
-    prom = suma / sesiones;
+    prom = suma / sesiones; 
 
     printf("El promedio de tu puntaje fue de: %.2f ptos.\n",prom);
 }
 
-void maxAmin(int *psesiones, int sesiones){
+// FUNCION QUE COMPARA, BUSCA Y ENCUENTRA EL PUNJATE MAS ALTO Y EL MAS BAJO (maximo y minimo)
+void maxYmin(int *psesiones, int sesiones){
     int min, max;
 
     min = max = psesiones[1];
@@ -104,6 +112,7 @@ void maxAmin(int *psesiones, int sesiones){
     printf("El minimo puntaje que obtuviste fue de: %i ptos.\n", min);
 }
 
+// FUNCION QUE BUSCA Y DETECTA LA CANTIDAD DE PALABRAS DE UN ARCHIVO EXTERNO (palabras.txt)
 int totalLines(){
     FILE * file;
     int numeroLineas = 0;
@@ -111,17 +120,19 @@ int totalLines(){
 
     file = fopen(ARCHIVOEXTERNO, "r");
 
-    while(!feof(file))
+    while(!feof(file)) 
     {
-        ch = fgetc(file);
+        ch = fgetc(file); // Devuelve un entero de un caracter 
         if(ch == '\n')
         {
             numeroLineas++;
         }
     }
     return numeroLineas;
+   
 }
 
+// FUNCION QUE NOS TRAE UNA PALABRA DEL ARCHIVO "palabras.txt"
 void getWordInLine(char *p,int pos) {
 
     char * line = NULL;
@@ -136,8 +147,8 @@ void getWordInLine(char *p,int pos) {
     }
     
     int i=1;
-
-    while ((read = getline(&line, &len, fp)) != -1) {
+    //getline lee una linea entera  del archivo almacenando el texto (incluyendo el carácter de nueva línea y el de terminación) 
+    while ((read = getline(&line, &len, fp)) != -1) { 
         if (i==pos) {
             strcpy(p, line);
             return;
@@ -147,58 +158,62 @@ void getWordInLine(char *p,int pos) {
     fclose(fp);
 }
 
+//FUNCION DONDE SE DEFINEN Y ALMACENAN LOS PUNTAJES 
 int puntaje(int psesion,int points,int partidaActual){
-
+    // Declaro un entero donde se guarden los puntajes de cada sesion
     int puntajeSesiones;
-
-    if(points == MAXPOINTS){
-        puntajeSesiones = START + MAXPOINTS + PAL_ADIVINADA;
+    // Use los macros antes definidos para jugar con la logica de lo que pasa segun vayamos adivinando las letras
+    if(points == MAXPUNTOS){
+        puntajeSesiones = INICIO + MAXPUNTOS + PAL_ADIVINADA;
         return puntajeSesiones;
     }
-    else if(points == PASSLINE){
-        puntajeSesiones = psesion - PASSLINE;
+    else if(points == PASODELINEA){
+        puntajeSesiones = psesion - PASODELINEA;
         return puntajeSesiones;
     }
-    else if (points == CLETTER){
-        puntajeSesiones = psesion + CLETTER;
+    else if (points == LCORRECTA){
+        puntajeSesiones = psesion + LCORRECTA;
         return puntajeSesiones;
     }
-    else if (points == GLETTER){
-        puntajeSesiones = psesion + GLETTER;
+    else if (points == ELETRA){
+        puntajeSesiones = psesion + ELETRA;
         return puntajeSesiones;
     }
     else if (points == PAL_ADIVINADA){
         puntajeSesiones = psesion + PAL_ADIVINADA;
         return puntajeSesiones;
     }
-}
+} // El return sirve para que se guarde el puntaje de sesion
 
+// FUNCION QUE TRABAJA LA LOGICA DENTRO DE CADA INTENTO JUGADO
 int intento(int psesion,char *p,int attemp){
     char palabra[6], pal_ingresada[6];
     int i = 0,j = 0, u = 0;
 
-    scanf("%[^\n]s",&palabra);
+    scanf("%[^\n]s",&palabra); // Le pido que tome todos los caracteres expecto el enter o /n
 
-    int largo = strlen(palabra);
+    int largo = strlen(palabra);// strlen numero de caracteres de palabra
 
+    // Validador de solamente pueda ingresar 5 letras
     while(largo != 5){
         printf("Por favor ingrese una palabra con un largo de 5 letras.\n");
         scanf("%s",&pal_ingresada);
         largo = strlen(pal_ingresada);
     }
 
+    // Validador para poner las letras en mayuscula siempre [toupper()]
     for (int k = 0; k < largo; k++)
     {
         palabra[k] = toupper(palabra[k]);
     }
 
-    strcat(palabra,"\n");
+    strcat(palabra,"\n"); // srtcat: añade un bloque de memoria a otro
 
     int value = strcmp(palabra,p);
 
     if (value == 0)
     {
-        printf("%s%s\n" RESET, KGRN,p);
+        printf("%s%s\n" RESET, KGRN,p); //macros para agregar color
         printf("Has acertado la palabra secreta \n");
         printf("\n");
 
@@ -210,20 +225,20 @@ int intento(int psesion,char *p,int attemp){
         return psesion;
     }
     else{
-        psesion = puntaje(psesion,PASSLINE,attemp);
+        psesion = puntaje(psesion,PASODELINEA,attemp);
 
-        while (i < largo && palabra[i] != 10)
+        while (i < largo && palabra[i] != 10) // en el codigo ACSII 10 = salto de linea 
         {
             if (p[i] == palabra[i] && p[i] != 10)
             {   
                 if (ck[i] == 0)
                 {
-                    psesion = puntaje(psesion,CLETTER,attemp);
+                    psesion = puntaje(psesion,LCORRECTA,attemp);
                 }
                 ck[i] = 1;
         
                 printf(RESET);
-                printf("%s%c",KGRN,p[i]);
+                printf("%s%c",KGRN,p[i]); //macros para agregar color
                 printf(RESET);
             }
             else if(palabra[i] != 10){
@@ -231,9 +246,9 @@ int intento(int psesion,char *p,int attemp){
                 int val = palabra[i];
 
                 if(strchr(p,val) != NULL){
-                    psesion = puntaje(psesion,GLETTER,attemp);
+                    psesion = puntaje(psesion,ELETRA,attemp);
                     printf(RESET);
-                    printf("%s%c",KYEL,palabra[i]);
+                    printf("%s%c",KYEL,palabra[i]);//macros para agregar color
                     printf(RESET);
                     val = 0;
                 }
@@ -256,7 +271,7 @@ void partidas(int partidas,char * p) {
 
     for (int n = 1; n <= sesiones; n++)
     {
-        psesiones[n] = START;
+        psesiones[n] = INICIO;
     }
     for (int f = 0; f < 5; f++)
     {
@@ -269,7 +284,7 @@ void partidas(int partidas,char * p) {
         getWordInLine(p,pos);
 
         printf("Partida %i / %i \n", i,partidas);
-        
+    
         for (int attemp = 1; attemp <= MAX_INTENTOS; attemp++)
         {
             printf("Intento %i / %i \n", attemp,MAX_INTENTOS);
@@ -280,7 +295,7 @@ void partidas(int partidas,char * p) {
             if (resultado == 1)
             {
                 attemp = MAX_INTENTOS;
-                psesiones[i] = puntaje(psesiones[i],MAXPOINTS,i);
+                psesiones[i] = puntaje(psesiones[i],MAXPUNTOS,i);
             }
             else if (acierto == 1){
                 attemp = MAX_INTENTOS;
@@ -320,7 +335,7 @@ void partidas(int partidas,char * p) {
     {
         printf("P. %i = %i pts. \n",m,psesiones[m]);
     } printf("\n");
-    maxAmin(psesiones,sesiones);
+    maxYmin(psesiones,sesiones);
     promedio(psesiones,sesiones);
     printf("\n");
 }
@@ -334,12 +349,13 @@ int main() {
 
     printf("Hola, bienvenido a Wordle\n");
     printf("Porfavor ingresa la cantidad de sesiones que deseas jugar entre 1 y 8. \n");
+    printf("Recuerda colocar palabras de 5 letras como en el juego original \n");
     printf("Recuerda evitar ingresar palabras donde se repitan letras, este Wordle trabaja con palabras totalmente heterogramas. \n");
     printf(">");
     
     scanf("%i", &sesiones);
     while(sesiones < MIN_PARTIDAS || sesiones > MAX_PARTIDAS){
-        printf("No te hagas el vivo, pon dentro del rango mencionado, porfavor! \n");
+        printf("Pon dentro del rango mencionado, porfavor! \n");
         printf(">");
         scanf("%i", &sesiones);
     } 
