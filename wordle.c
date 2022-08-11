@@ -15,7 +15,7 @@
 #define ARCHIVOEXTERNO "palabras.txt"
 #define MAX_INTENTOS 6
 
-// MARCOS UTILIZADOS PARA LAS PUNTUACIONES.
+// MACROS UTILIZADOS PARA LAS PUNTUACIONES.
 #define INICIO 5000
 #define MAXPUNTOS 5000
 #define PASODELINEA 500 
@@ -35,8 +35,13 @@
 static HANDLE stdoutHandle;
 static DWORD outModeInit;
 
-// MACROS UNIVERSALES QUE NECESITE PARA QUE MAS DE UNA FUNCION PUEDA TRABAJAR EN CONJUNTO CON ELLOS.
+// VARIABLES GLOBALES PARA QUE TODAS LAS FUNCIONES PUEDAN ACCEDER A ELLAS DE FORMA MAS FACIL
 int sesiones, acierto = 0, ck[5];
+
+//ck es una variable global para poder saber que letras de la palabra en cada partida fueron acertadas en el lugar correcto.
+/* Esto nos va a ayudar al momento de determinar el puntaje. Ya que las letras que fueron acertadas en el lugar correspondiente
+ya que el puntaje de las letras acertadas en el lugar correcto no son acumulables.
+*/
 
 //FUNCIONES DE LAS CUALES SE VAN A COMPONER NUESTRO WORDLE:
 
@@ -94,7 +99,7 @@ void promedio(int *psesiones, int sesiones){
 void maxYmin(int *psesiones, int sesiones){
     int min, max;
 
-    min = max = psesiones[1];
+    min = max = psesiones[1]; // psesiones[1] porque la matriz empieza desde 1
 
     for (int i = 1; i <= sesiones; i++)
     {
@@ -122,7 +127,7 @@ int totalLines(){
 
     while(!feof(file)) 
     {
-        ch = fgetc(file); // Devuelve un entero de un caracter. 
+        ch = fgetc(file); // lee caracter por caracter gracias al while
         if(ch == '\n')
         {
             numeroLineas++;
@@ -137,18 +142,17 @@ void getWordInLine(char *p,int pos) {
 
     char * line = NULL;
     size_t len;
-    size_t read;
+    size_t read; // valor de retorno de la funcion getline
     FILE * fp;
-
+    int i=1;
+    
     fp = fopen(ARCHIVOEXTERNO, "r");
 
     if (fp == NULL){
         exit(EXIT_FAILURE);
     }
-    
-    int i=1;
     //getline lee una linea entera  del archivo almacenando el texto (incluyendo el carácter de nueva línea y el de terminación).
-    while ((read = getline(&line, &len, fp)) != -1) { 
+    while ((read = getline(&line, &len, fp)) != -1) { // mientras read no de -1 signfica que hay lineas de codigo por leer
         if (i==pos) {
             strcpy(p, line);
             return;
@@ -215,7 +219,7 @@ int intento(int psesion,char *p,int attemp){
     {
         printf("%s%s\n" RESET, KGRN,p); // macros para agregar color.
         printf("Has acertado la palabra secreta \n");
-        printf("\n");
+        printf("\n");    
 
         if(attemp == 1){
             return 1;
@@ -270,12 +274,13 @@ void partidas(int partidas,char * p) {
     int pos, resultado;
     int psesiones[sesiones];
 
-    for (int n = 1; n <= sesiones; n++)
+    for (int n = 1; n <= sesiones; n++) //Inicializa el puntaje de cada sesion de juego con el puntaje inicial.
     {
         psesiones[n] = INICIO;
     }
 
-    for (int f = 0; f < 5; f++)
+    //Este ciclo nos va a llenar la matriz int con 0. Esta matriz nos va a ayudar a identificar que letras ya fueron acertadas en el lugar correcto.
+    for (int f = 0; f < 5; f++) 
     {
         ck[f] = 0;
     }
@@ -290,27 +295,28 @@ void partidas(int partidas,char * p) {
 
     for (int attemp = 1; attemp <= MAX_INTENTOS; attemp++)
         {
-        printf("Intento %i / %i \n", attemp,MAX_INTENTOS);
+            printf("Intento %i / %i \n", attemp,MAX_INTENTOS);
 
-        fflush(stdin); // Funcion que limpia la memoria del buffer.
-        resultado = intento(psesiones[i],p,attemp);
+            fflush(stdin); // Funcion que limpia la memoria del buffer.
            
-    if (resultado == 1)
-        {
-        attemp = MAX_INTENTOS;
-        psesiones[i] = puntaje(psesiones[i],MAXPUNTOS,i);
-        }
-    else if (acierto == 1){
-        attemp = MAX_INTENTOS;
-        psesiones[i] = resultado;
-        }
-    else if (acierto == 0 && attemp == MAX_INTENTOS)
-        {
-        psesiones[i] = 0;
-        }
-    else{
-        psesiones[i] = resultado;
-        }
+            resultado = intento(psesiones[i],p,attemp);
+            
+            if (resultado == 1)
+            {
+                attemp = MAX_INTENTOS;
+                psesiones[i] = puntaje(psesiones[i],MAXPUNTOS,i);
+            }
+            else if (acierto == 1){
+                attemp = MAX_INTENTOS;
+                psesiones[i] = resultado;
+            }
+            else if (acierto == 0 && attemp == MAX_INTENTOS)
+            {
+                psesiones[i] = 0;
+            }
+            else{
+                psesiones[i] = resultado;
+            }
         }
     if(partidas >= 1){
             printf("La palabra era: %s%s \n",KGRN, p);
@@ -338,6 +344,7 @@ void partidas(int partidas,char * p) {
     {
         printf("P. %i = %i pts. \n",m,psesiones[m]);    
     } printf("\n");
+    
     maxYmin(psesiones,sesiones); // Resultados finales de la partida.
     promedio(psesiones,sesiones); // Resultados finales de la partida.
     printf("\n");                                       
@@ -345,7 +352,6 @@ void partidas(int partidas,char * p) {
 
 int main() {
     setupConsole();
-    int i;
     int totaljuegos;
     int palabramisteriosa[LETRAS];
     char p[6];
