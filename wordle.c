@@ -39,8 +39,8 @@ static DWORD outModeInit;
 int sesiones, acierto = 0, ck[5];
 
 //ck es una variable global para poder saber que letras de la palabra en cada partida fueron acertadas en el lugar correcto.
-/* Esto nos va a ayudar al momento de determinar el puntaje. Ya que las letras que fueron acertadas en el lugar correspondiente
-ya que el puntaje de las letras acertadas en el lugar correcto no son acumulables.
+/* Esto nos va a ayudar al momento de determinar el puntaje. Ya que las letras que fueron acertadas en el lugar correspondiente y ademas 
+el puntaje de las letras acertadas en el lugar correcto no son acumulables(no se vuelven a sumar a la puntuacion).
 */
 
 //FUNCIONES DE LAS CUALES SE VAN A COMPONER NUESTRO WORDLE:
@@ -95,11 +95,11 @@ void promedio(int *psesiones, int sesiones){
     printf("El promedio de tu puntaje fue de: %.2f ptos.\n",prom);
 }
 
-// FUNCION QUE COMPARA, BUSCA Y ENCUENTRA EL PUNJATE MAS ALTO Y EL MAS BAJO (maximo y minimo).
-void maxYmin(int *psesiones, int sesiones){
+// FUNCION QUE COMPARA, BUSCA Y ENCUENTRA EL PUNJATE MAS ALTO Y EL MAS BAJO
+void maxAmin(int *psesiones, int sesiones){
     int min, max;
 
-    min = max = psesiones[1]; // psesiones[1] porque la matriz empieza desde 1
+    min = max = psesiones[1];
 
     for (int i = 1; i <= sesiones; i++)
     {
@@ -112,7 +112,7 @@ void maxYmin(int *psesiones, int sesiones){
             }
         }
     }
-    
+
     printf("El maximo puntaje que obtuviste fue de: %i ptos.\n", max);
     printf("El minimo puntaje que obtuviste fue de: %i ptos.\n", min);
 }
@@ -189,10 +189,10 @@ int puntaje(int psesion,int points,int partidaActual){
     }
 } // El return sirve para que se guarde el puntaje de sesion.
 
-// FUNCION QUE TRABAJA LA LOGICA DENTRO DE CADA INTENTO JUGADO.
+// FUNCION QUE TRABAJA LA LOGICA DE LA PALABRA QUE NOSOTROS MANDAMOS DENTRO DE CADA INTENTO JUGADO.
 int intento(int psesion,char *p,int attemp){
     char palabra[6], pal_ingresada[6];
-    int i = 0,j = 0, u = 0;
+    int i = 0,j = 0, u = 0, k = 0;
 
     scanf("%[^\n]s",&palabra); // Le pido que tome todos los caracteres expecto el salto de linea(\n).
 
@@ -206,16 +206,16 @@ int intento(int psesion,char *p,int attemp){
     }
 
     // Validador para poner las letras en mayuscula siempre [toupper()].
-    for (int k = 0; k < largo; k++)
+    for (k = 0; k < largo; k++)
     {
         palabra[k] = toupper(palabra[k]);
     }
 
     strcat(palabra,"\n"); // srtcat: añade un bloque de memoria a otro.
 
-    int value = strcmp(palabra,p);
+    int value = strcmp(palabra,p); // strcmp(x,y) si las cadenas son iguales o diferentes
 
-    if (value == 0)
+    if (value == 0) // si da 0 son iguales 
     {
         printf("%s%s\n" RESET, KGRN,p); // macros para agregar color.
         printf("Has acertado la palabra secreta \n");
@@ -245,7 +245,7 @@ int intento(int psesion,char *p,int attemp){
                 printf("%s%c",KGRN,p[i]); // macros para agregar color.
                 printf(RESET);
             }
-            else if(palabra[i] != 10){
+            else if(palabra[i] != 10){ // Logica para las letras que son parte de la palabra pero no estan ubiocadas en lugar correcto
 
                 int val = palabra[i];
 
@@ -284,16 +284,17 @@ void partidas(int partidas,char * p) {
     {
         ck[f] = 0;
     }
-    // Este for elige las palabras aleatoriamente haciendo una cuenta de un numero aleatorio % el total de lineas mas uno ya que el contador de totalines() empieza desde 0.
+    /* Este for elige las palabras aleatoriamente haciendo una cuenta de un numero aleatorio % 
+    el total de lineas sumando uno ya que el contador de totalines() empieza desde 0.*/
     for(int i = 1; i <= partidas;i++){
-        srand(clock());
+        srand((unsigned)time(NULL));
         pos = rand()%totalLines()+1;
         getWordInLine(p,pos);
 
         printf("Partida %i / %i \n", i,partidas);
 
 
-    for (int attemp = 1; attemp <= MAX_INTENTOS; attemp++)
+    for (int attemp = 1; attemp <= MAX_INTENTOS; attemp++) 
         {
             printf("Intento %i / %i \n", attemp,MAX_INTENTOS);
 
@@ -304,17 +305,17 @@ void partidas(int partidas,char * p) {
             if (resultado == 1)
             {
                 attemp = MAX_INTENTOS;
-                psesiones[i] = puntaje(psesiones[i],MAXPUNTOS,i);
+                psesiones[i] = puntaje(psesiones[i],MAXPUNTOS,i);//si adivinamos la palabra al primer intento nuestra puntuacion se suma  el maximo de puntajes posible
             }
-            else if (acierto == 1){
+            else if (acierto == 1){// si adivinamos la palabra antes de los  6 intentos nuestro puntaje va a ser igual a como nos fue en esa sesion de juego.
                 attemp = MAX_INTENTOS;
                 psesiones[i] = resultado;
             }
-            else if (acierto == 0 && attemp == MAX_INTENTOS)
+            else if (acierto == 0 && attemp == MAX_INTENTOS) //si pasaron los 6 intentos y no pudimos adivinar la palabra la puntuacion pasa a cero.
             {
                 psesiones[i] = 0;
             }
-            else{
+            else{//si adivinamos la palabra en el ultimo intento nuestro puntaje va a ser igual a como nos fue en esa sesion de juego.
                 psesiones[i] = resultado;
             }
         }
@@ -323,7 +324,7 @@ void partidas(int partidas,char * p) {
             printf(RESET);
             if(i != partidas){
                 char decision; //validador para seguir jugando o no.
-                printf("Desea seguir jugando? [N - exit]: ");
+                printf("Desea seguir jugando? ['N' or 'n' = exit]: ");
                 getchar();// getchar(): lee caracter por caracter.
                 scanf("%c",&decision);
                 // Si tocamos la n o N con estas lineas de codigo el juego corta ahi.
@@ -345,7 +346,7 @@ void partidas(int partidas,char * p) {
         printf("P. %i = %i pts. \n",m,psesiones[m]);    
     } printf("\n");
     
-    maxYmin(psesiones,sesiones); // Resultados finales de la partida.
+    maxAmin(psesiones,sesiones); // Resultados finales de la partida.
     promedio(psesiones,sesiones); // Resultados finales de la partida.
     printf("\n");                                       
 }
